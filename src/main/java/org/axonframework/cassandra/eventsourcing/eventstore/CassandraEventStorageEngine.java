@@ -1,8 +1,8 @@
 package org.axonframework.cassandra.eventsourcing.eventstore;
 
 import com.datastax.driver.core.BatchStatement;
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import org.axonframework.common.jdbc.PersistenceExceptionResolver;
 import org.axonframework.common.transaction.TransactionManager;
@@ -28,10 +28,21 @@ public class CassandraEventStorageEngine extends CassandraReadOnlyEventStorageEn
     private final String batchKey = this + "_BATCH";
 
     private final AtomicLong globalIndexCounter;
+    private final PreparedStatement counterSelectStatement;
+    private final PreparedStatement counterInsertStatement;
 
     public CassandraEventStorageEngine(Serializer serializer, EventUpcasterChain upcasterChain, PersistenceExceptionResolver persistenceExceptionResolver, TransactionManager transactionManager, Integer batchSize, Session session, EventSchema schema) {
         super(serializer, upcasterChain, persistenceExceptionResolver, transactionManager, batchSize, session, schema);
-        this.globalIndexCounter = new AtomicLong(selectCounter(GLOBAL_INDEX_COUNTER_NAME));
+
+        this.counterSelectStatement = session.prepare("SELECT " + quoted("value") +
+                " FROM" + quoted("Counters") +
+                " WHERE " + quoted("name") + " = ? LIMIT 1");
+        this.counterInsertStatement = session.prepare("INSERT INTO " + quoted("Counters") +
+                " (" + quoted("name", "value") + ")" +
+                " VALUES(?,?)");
+
+        Row globalIndexCounterRow = session.execute(counterSelectStatement.bind(GLOBAL_INDEX_COUNTER_NAME)).one();
+        this.globalIndexCounter = new AtomicLong(Optional.ofNullable(globalIndexCounterRow).map(row -> row.getLong(0)).orElse(0L));
     }
 
     private static DomainEventEntry asDomainEventEntry(DomainEventMessage<?> eventMessage, Serializer serializer, long globalIndex) {
@@ -50,7 +61,7 @@ public class CassandraEventStorageEngine extends CassandraReadOnlyEventStorageEn
                 .map(this::storeEventLogEntry)
                 .map(eventMapper::saveQuery)
                 .forEachOrdered(batch()::add);
-        batch().add(updateCounterQuery(GLOBAL_INDEX_COUNTER_NAME, globalIndexCounter.get()));
+        batch().add(counterInsertStatement.bind(GLOBAL_INDEX_COUNTER_NAME, globalIndexCounter.get()));
     }
 
     @Override
@@ -71,19 +82,6 @@ public class CassandraEventStorageEngine extends CassandraReadOnlyEventStorageEn
             root.onCommit(unitOfWork -> session.execute(batch));
             return batch;
         });
-    }
-
-    private long selectCounter(String name) {
-        ResultSet resultSet = session.execute("SELECT " + quoted("value") +
-                " FROM" + quoted("Counters") +
-                " WHERE " + quoted("name") + " = ? LIMIT 1", name);
-        return Optional.ofNullable(resultSet.one()).map(row -> row.getLong(0)).orElse(0L);
-    }
-
-    private BoundStatement updateCounterQuery(String name, long value) {
-        return session.prepare("INSERT INTO " + quoted("Counters") +
-                " (" + quoted("name", "value") + ")" +
-                " VALUES(?,?)").bind(name, value);
     }
 
 }
