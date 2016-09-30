@@ -1,6 +1,7 @@
 package org.axonframework.cassandra.eventsourcing.eventstore;
 
 import com.datastax.driver.core.BatchStatement;
+import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import org.axonframework.common.jdbc.PersistenceExceptionResolver;
@@ -23,14 +24,14 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class CassandraEventStorageEngine extends CassandraReadOnlyEventStorageEngine {
 
-    private static final String EVENTS_COUNTER_NAME = "events";
+    private static final String GLOBAL_INDEX_COUNTER_NAME = "globalIndex";
     private final String batchKey = this + "_BATCH";
 
     private final AtomicLong globalIndexCounter;
 
     public CassandraEventStorageEngine(Serializer serializer, EventUpcasterChain upcasterChain, PersistenceExceptionResolver persistenceExceptionResolver, TransactionManager transactionManager, Integer batchSize, Session session, EventSchema schema) {
         super(serializer, upcasterChain, persistenceExceptionResolver, transactionManager, batchSize, session, schema);
-        this.globalIndexCounter = new AtomicLong(selectCounter(EVENTS_COUNTER_NAME));
+        this.globalIndexCounter = new AtomicLong(selectCounter(GLOBAL_INDEX_COUNTER_NAME));
     }
 
     private static DomainEventEntry asDomainEventEntry(DomainEventMessage<?> eventMessage, Serializer serializer, long globalIndex) {
@@ -49,6 +50,7 @@ public class CassandraEventStorageEngine extends CassandraReadOnlyEventStorageEn
                 .map(this::storeEventLogEntry)
                 .map(eventMapper::saveQuery)
                 .forEachOrdered(batch()::add);
+        batch().add(updateCounterQuery(GLOBAL_INDEX_COUNTER_NAME, globalIndexCounter.get()));
     }
 
     @Override
@@ -76,6 +78,12 @@ public class CassandraEventStorageEngine extends CassandraReadOnlyEventStorageEn
                 " FROM" + quoted("Counters") +
                 " WHERE " + quoted("name") + " = ? LIMIT 1", name);
         return Optional.ofNullable(resultSet.one()).map(row -> row.getLong(0)).orElse(0L);
+    }
+
+    private BoundStatement updateCounterQuery(String name, long value) {
+        return session.prepare("INSERT INTO " + quoted("Counters") +
+                " (" + quoted("name", "value") + ")" +
+                " VALUES(?,?)").bind(name, value);
     }
 
 }

@@ -81,10 +81,10 @@ public class CassandraReadOnlyEventStorageEngine extends BatchingEventStorageEng
             long globalIndex = lastToken == null ? -1 : ((GlobalIndexTrackingToken) lastToken).getGlobalIndex();
             long batchIndex = EventLogEntry.determineBatchIndex(globalIndex + 1);
             ResultSet resultSet = session.execute("SELECT " + quoted(schema().aggregateIdentifierColumn(), schema().sequenceNumberColumn()) +
-                    " FROM " + quoted("EventLogEntry") +
+                    " FROM " + quoted(schema().domainEventTable()) +
                     " WHERE " + quoted("batchIndex") + " = ?" +
-                    " AND " + quoted("globalIndex") + " > ?" +
-                    " ORDER BY " + quoted("globalIndex") +
+                    " AND " + quoted(schema().globalIndexColumn()) + " > ?" +
+                    " ORDER BY " + quoted(schema().globalIndexColumn()) +
                     " LIMIT ?", batchIndex, globalIndex, EventLogEntry.BATCH_SIZE);
             // TODO: fetch a range by first determining the first and last sequence number of each aggregate
             return eventLogMapper.map(resultSet).all().stream()
@@ -152,6 +152,6 @@ public class CassandraReadOnlyEventStorageEngine extends BatchingEventStorageEng
         return Arrays.asList(schema().eventIdentifierColumn(), schema().timestampColumn(), schema().payloadTypeColumn(),
                 schema().payloadRevisionColumn(), schema().payloadColumn(), schema().metaDataColumn(),
                 schema().typeColumn(), schema().aggregateIdentifierColumn(), schema().sequenceNumberColumn(),
-                "transactionIndex");
+                schema().globalIndexColumn());
     }
 }
