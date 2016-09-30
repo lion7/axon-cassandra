@@ -59,9 +59,9 @@ public class CassandraReadOnlyEventStorageEngine extends BatchingEventStorageEng
         if (session == null) {
             throw new IllegalArgumentException("Parameter 'session' cannot be null");
         }
+        MappingManager mappingManager = new MappingManager(session);
         this.session = session;
         this.schema = getOrDefault(schema, () -> CassandraEventSchema.builder().build());
-        MappingManager mappingManager = new MappingManager(session);
         this.eventMapper = mappingManager.mapper(DomainEventEntry.class);
         this.snapshotMapper = mappingManager.mapper(SnapshotEventEntry.class);
         this.eventLogMapper = mappingManager.mapper(EventLogEntry.class);
@@ -80,7 +80,7 @@ public class CassandraReadOnlyEventStorageEngine extends BatchingEventStorageEng
         if (lastToken == null || lastToken instanceof GlobalIndexTrackingToken) {
             long globalIndex = lastToken == null ? -1 : ((GlobalIndexTrackingToken) lastToken).getGlobalIndex();
             long batchIndex = EventLogEntry.determineBatchIndex(globalIndex + 1);
-            ResultSet resultSet = session.execute("SELECT " + quoted("eventsReferences") +
+            ResultSet resultSet = session.execute("SELECT " + quoted(schema().aggregateIdentifierColumn(), schema().sequenceNumberColumn()) +
                     " FROM " + quoted("EventLogEntry") +
                     " WHERE " + quoted("batchIndex") + " = ?" +
                     " AND " + quoted("globalIndex") + " > ?" +

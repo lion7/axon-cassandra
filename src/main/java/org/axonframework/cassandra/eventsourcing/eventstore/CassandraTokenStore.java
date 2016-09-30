@@ -6,8 +6,11 @@ import com.datastax.driver.mapping.MappingManager;
 import org.axonframework.eventhandling.tokenstore.TokenStore;
 import org.axonframework.eventsourcing.eventstore.TrackingToken;
 import org.axonframework.serialization.Serializer;
+import org.axonframework.serialization.xml.XStreamSerializer;
 
 import java.util.Optional;
+
+import static org.axonframework.common.ObjectUtils.getOrDefault;
 
 /**
  * Created by gle21221 on 2-9-2016.
@@ -18,9 +21,12 @@ public class CassandraTokenStore implements TokenStore {
     private final Mapper<TokenEntry> tokenMapper;
 
     public CassandraTokenStore(Session session, Serializer serializer) {
-        this.serializer = serializer;
+        if (session == null) {
+            throw new IllegalArgumentException("Parameter 'session' cannot be null");
+        }
         MappingManager mappingManager = new MappingManager(session);
         this.tokenMapper = mappingManager.mapper(TokenEntry.class);
+        this.serializer = getOrDefault(serializer, XStreamSerializer::new);
     }
 
     @Override
