@@ -31,8 +31,8 @@ public class EventLogEntry implements Comparable<EventLogEntry> {
     protected EventLogEntry() {
     }
 
-    public static long determineBatchIndex(long globalIndex) {
-        return globalIndex % BATCH_SIZE;
+    static long determineBatchIndex(long globalIndex) {
+        return globalIndex / BATCH_SIZE;
     }
 
     public long getBatchIndex() {
