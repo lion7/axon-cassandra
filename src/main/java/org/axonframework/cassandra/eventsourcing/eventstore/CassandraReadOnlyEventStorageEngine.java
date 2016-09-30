@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.axonframework.common.ObjectUtils.getOrDefault;
+
 /**
  * Created by gle21221 on 2-9-2016.
  */
@@ -54,8 +56,11 @@ public class CassandraReadOnlyEventStorageEngine extends BatchingEventStorageEng
      */
     public CassandraReadOnlyEventStorageEngine(Serializer serializer, EventUpcasterChain upcasterChain, PersistenceExceptionResolver persistenceExceptionResolver, TransactionManager transactionManager, Integer batchSize, Session session, EventSchema schema) {
         super(serializer, upcasterChain, persistenceExceptionResolver, transactionManager, batchSize);
+        if (session == null) {
+            throw new IllegalArgumentException("Parameter 'session' cannot be null");
+        }
         this.session = session;
-        this.schema = schema;
+        this.schema = getOrDefault(schema, () -> CassandraEventSchema.builder().build());
         MappingManager mappingManager = new MappingManager(session);
         this.eventMapper = mappingManager.mapper(DomainEventEntry.class);
         this.snapshotMapper = mappingManager.mapper(SnapshotEventEntry.class);
