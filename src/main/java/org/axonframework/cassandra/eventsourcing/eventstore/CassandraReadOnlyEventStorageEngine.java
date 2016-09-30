@@ -81,7 +81,7 @@ public class CassandraReadOnlyEventStorageEngine extends BatchingEventStorageEng
             long globalIndex = lastToken == null ? -1 : ((GlobalIndexTrackingToken) lastToken).getGlobalIndex();
             long batchIndex = EventLogEntry.determineBatchIndex(globalIndex + 1);
             ResultSet resultSet = session.execute("SELECT " + quoted(schema().aggregateIdentifierColumn(), schema().sequenceNumberColumn()) +
-                    " FROM " + quoted(schema().domainEventTable()) +
+                    " FROM " + quoted("EventLogEntry") +
                     " WHERE " + quoted("batchIndex") + " = ?" +
                     " AND " + quoted(schema().globalIndexColumn()) + " > ?" +
                     " ORDER BY " + quoted(schema().globalIndexColumn()) +
