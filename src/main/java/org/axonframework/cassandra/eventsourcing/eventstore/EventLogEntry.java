@@ -9,23 +9,26 @@ import com.datastax.driver.mapping.annotations.Table;
  */
 @Table(name = "EventLogEntry", caseSensitiveTable = true)
 public class EventLogEntry implements Comparable<EventLogEntry> {
-    public static final int BATCH_SIZE = 100;
+    static final int BATCH_SIZE = 100;
     @Column(caseSensitive = true)
     @PartitionKey
-    private final long batchIndex;
+    private long batchIndex;
     @Column(caseSensitive = true)
     @PartitionKey(1)
-    private final long globalIndex;
+    private long globalIndex;
     @Column(caseSensitive = true)
-    private final String aggregateIdentifier;
+    private String aggregateIdentifier;
     @Column(caseSensitive = true)
-    private final long sequenceNumber;
+    private long sequenceNumber;
 
     public EventLogEntry(long globalIndex, String aggregateIdentifier, long sequenceNumber) {
         this.batchIndex = determineBatchIndex(globalIndex);
         this.globalIndex = globalIndex;
         this.aggregateIdentifier = aggregateIdentifier;
         this.sequenceNumber = sequenceNumber;
+    }
+
+    protected EventLogEntry() {
     }
 
     public static long determineBatchIndex(long globalIndex) {
