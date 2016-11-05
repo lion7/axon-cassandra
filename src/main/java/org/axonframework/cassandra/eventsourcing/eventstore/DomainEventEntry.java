@@ -15,9 +15,6 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Date;
 
-/**
- * Created by gle21221 on 2-9-2016.
- */
 @Table(name = "DomainEventEntry", caseSensitiveTable = true)
 public class DomainEventEntry implements DomainEventData<byte[]>, TrackedEventData<byte[]> {
 

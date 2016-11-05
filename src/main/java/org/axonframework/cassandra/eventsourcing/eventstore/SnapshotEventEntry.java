@@ -11,9 +11,6 @@ import org.axonframework.serialization.*;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 
-/**
- * Created by gle21221 on 2-9-2016.
- */
 @Table(name = "SnapshotEventEntry", caseSensitiveTable = true)
 public class SnapshotEventEntry implements DomainEventData<byte[]> {
 

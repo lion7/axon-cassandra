@@ -12,7 +12,6 @@ import org.axonframework.eventsourcing.eventstore.BatchingEventStorageEngine;
 import org.axonframework.eventsourcing.eventstore.DomainEventData;
 import org.axonframework.eventsourcing.eventstore.GlobalIndexTrackingToken;
 import org.axonframework.eventsourcing.eventstore.TrackingToken;
-import org.axonframework.eventsourcing.eventstore.jdbc.EventSchema;
 import org.axonframework.serialization.Serializer;
 import org.axonframework.serialization.upcasting.event.EventUpcasterChain;
 import org.axonframework.serialization.upcasting.event.NoOpEventUpcasterChain;
@@ -23,11 +22,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.axonframework.cassandra.eventsourcing.eventstore.EventSchema.quoted;
 import static org.axonframework.common.ObjectUtils.getOrDefault;
 
-/**
- * Created by gle21221 on 2-9-2016.
- */
 public class CassandraReadOnlyEventStorageEngine extends BatchingEventStorageEngine {
 
     final Session session;
@@ -61,18 +58,10 @@ public class CassandraReadOnlyEventStorageEngine extends BatchingEventStorageEng
         }
         MappingManager mappingManager = new MappingManager(session);
         this.session = session;
-        this.schema = getOrDefault(schema, () -> CassandraEventSchema.builder().build());
+        this.schema = getOrDefault(schema, () -> EventSchema.builder().build());
         this.eventMapper = mappingManager.mapper(DomainEventEntry.class);
         this.snapshotMapper = mappingManager.mapper(SnapshotEventEntry.class);
         this.eventLogMapper = mappingManager.mapper(EventLogEntry.class);
-    }
-
-    static String quoted(String... input) {
-        return quoted(Arrays.asList(input));
-    }
-
-    static String quoted(Iterable<String> input) {
-        return '"' + String.join("\", \"", input) + '"';
     }
 
     @Override
@@ -81,8 +70,8 @@ public class CassandraReadOnlyEventStorageEngine extends BatchingEventStorageEng
             long globalIndex = lastToken == null ? -1 : ((GlobalIndexTrackingToken) lastToken).getGlobalIndex();
             long batchIndex = EventLogEntry.determineBatchIndex(globalIndex + 1);
             ResultSet resultSet = session.execute("SELECT " + quoted(schema().aggregateIdentifierColumn(), schema().sequenceNumberColumn()) +
-                    " FROM " + quoted("EventLogEntry") +
-                    " WHERE " + quoted("batchIndex") + " = ?" +
+                    " FROM " + quoted(schema().eventLogTable()) +
+                    " WHERE " + quoted(schema().batchIndexColumn()) + " = ?" +
                     " AND " + quoted(schema().globalIndexColumn()) + " > ?" +
                     " ORDER BY " + quoted(schema().globalIndexColumn()) +
                     " LIMIT ?", batchIndex, globalIndex, EventLogEntry.BATCH_SIZE);

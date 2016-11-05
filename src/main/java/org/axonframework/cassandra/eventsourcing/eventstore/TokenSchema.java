@@ -1,8 +1,5 @@
 package org.axonframework.cassandra.eventsourcing.eventstore;
 
-/**
- * Created by gle21221 on 2-9-2016.
- */
 public class TokenSchema {
     private final String tokenTable, processNameColumn, segmentColumn, tokenColumn, tokenTypeColumn, timeStampColumn;
 

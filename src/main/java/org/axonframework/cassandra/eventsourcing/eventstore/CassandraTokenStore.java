@@ -12,9 +12,6 @@ import java.util.Optional;
 
 import static org.axonframework.common.ObjectUtils.getOrDefault;
 
-/**
- * Created by gle21221 on 2-9-2016.
- */
 public class CassandraTokenStore implements TokenStore {
 
     private final Serializer serializer;

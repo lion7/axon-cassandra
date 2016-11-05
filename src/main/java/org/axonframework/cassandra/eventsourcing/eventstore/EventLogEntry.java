@@ -4,9 +4,6 @@ import com.datastax.driver.mapping.annotations.Column;
 import com.datastax.driver.mapping.annotations.PartitionKey;
 import com.datastax.driver.mapping.annotations.Table;
 
-/**
- * Created by gle21221 on 10-9-2016.
- */
 @Table(name = "EventLogEntry", caseSensitiveTable = true)
 public class EventLogEntry implements Comparable<EventLogEntry> {
     static final int BATCH_SIZE = 100;

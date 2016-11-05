@@ -9,7 +9,6 @@ import org.axonframework.common.transaction.TransactionManager;
 import org.axonframework.eventhandling.EventMessage;
 import org.axonframework.eventsourcing.DomainEventMessage;
 import org.axonframework.eventsourcing.eventstore.EventUtils;
-import org.axonframework.eventsourcing.eventstore.jdbc.EventSchema;
 import org.axonframework.messaging.unitofwork.CurrentUnitOfWork;
 import org.axonframework.messaging.unitofwork.UnitOfWork;
 import org.axonframework.serialization.Serializer;
@@ -19,9 +18,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Created by gle21221 on 2-9-2016.
- */
+import static org.axonframework.cassandra.eventsourcing.eventstore.EventSchema.quoted;
+
 public class CassandraEventStorageEngine extends CassandraReadOnlyEventStorageEngine {
 
     private static final String GLOBAL_INDEX_COUNTER_NAME = "globalIndex";
@@ -34,15 +32,19 @@ public class CassandraEventStorageEngine extends CassandraReadOnlyEventStorageEn
     public CassandraEventStorageEngine(Serializer serializer, EventUpcasterChain upcasterChain, PersistenceExceptionResolver persistenceExceptionResolver, TransactionManager transactionManager, Integer batchSize, Session session, EventSchema schema) {
         super(serializer, upcasterChain, persistenceExceptionResolver, transactionManager, batchSize, session, schema);
 
-        this.counterSelectStatement = session.prepare("SELECT " + quoted("value") +
-                " FROM" + quoted("Counters") +
-                " WHERE " + quoted("name") + " = ? LIMIT 1");
-        this.counterInsertStatement = session.prepare("INSERT INTO " + quoted("Counters") +
-                " (" + quoted("name", "value") + ")" +
+        schema.initialize(session);
+
+        this.counterSelectStatement = session.prepare("SELECT " + quoted(schema.valueColumn()) +
+                " FROM" + quoted(schema.countersTable()) +
+                " WHERE " + quoted(schema.nameColumn()) + " = ? LIMIT 1");
+        this.counterInsertStatement = session.prepare("INSERT INTO " + quoted(schema.countersTable()) +
+                " (" + quoted(schema.nameColumn(), schema.valueColumn()) + ")" +
                 " VALUES(?,?)");
 
         Row globalIndexCounterRow = session.execute(counterSelectStatement.bind(GLOBAL_INDEX_COUNTER_NAME)).one();
-        this.globalIndexCounter = new AtomicLong(Optional.ofNullable(globalIndexCounterRow).map(row -> row.getLong(0)).orElse(0L));
+        this.globalIndexCounter = new AtomicLong(Optional.ofNullable(globalIndexCounterRow)
+                .map(row -> row.getLong(0))
+                .orElse(0L));
     }
 
     private static DomainEventEntry asDomainEventEntry(DomainEventMessage<?> eventMessage, Serializer serializer, long globalIndex) {

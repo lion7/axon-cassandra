@@ -12,9 +12,6 @@ import org.axonframework.serialization.SimpleSerializedType;
 import java.nio.ByteBuffer;
 import java.util.Date;
 
-/**
- * Created by gle21221 on 2-9-2016.
- */
 @Table(name = "TokenEntry", caseSensitiveTable = true)
 public class TokenEntry {
     @Column(caseSensitive = true)
