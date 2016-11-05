@@ -65,13 +65,13 @@
             <artifactId>axon-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.axonframework</groupId>
             <artifactId>axon-spring</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+
         <!-- Cassandra dependencies -->
         <dependency>
             <groupId>com.datastax.cassandra</groupId>
@@ -98,12 +98,6 @@
                     <artifactId>commons-logging</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.hibernate.javax.persistence</groupId>
-            <artifactId>hibernate-jpa-2.1-api</artifactId>
-            <version>1.0.0.Final</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
