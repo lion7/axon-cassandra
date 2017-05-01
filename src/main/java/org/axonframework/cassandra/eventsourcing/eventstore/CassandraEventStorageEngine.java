@@ -31,8 +31,6 @@ public class CassandraEventStorageEngine extends CassandraReadOnlyEventStorageEn
     public CassandraEventStorageEngine(Serializer serializer, EventUpcaster upcasterChain, PersistenceExceptionResolver persistenceExceptionResolver, Integer batchSize, Session session, EventSchema schema) {
         super(serializer, upcasterChain, persistenceExceptionResolver, batchSize, session, schema);
 
-        schema.initialize(session);
-
         this.counterSelectStatement = session.prepare("SELECT " + quoted(schema.valueColumn()) +
                 " FROM" + quoted(schema.countersTable()) +
                 " WHERE " + quoted(schema.nameColumn()) + " = ? LIMIT 1");
