@@ -5,16 +5,14 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
 import org.axonframework.common.jdbc.PersistenceExceptionResolver;
-import org.axonframework.common.transaction.TransactionManager;
 import org.axonframework.eventhandling.EventMessage;
 import org.axonframework.eventsourcing.DomainEventMessage;
 import org.axonframework.eventsourcing.eventstore.BatchingEventStorageEngine;
 import org.axonframework.eventsourcing.eventstore.DomainEventData;
-import org.axonframework.eventsourcing.eventstore.GlobalIndexTrackingToken;
+import org.axonframework.eventsourcing.eventstore.GlobalSequenceTrackingToken;
 import org.axonframework.eventsourcing.eventstore.TrackingToken;
 import org.axonframework.serialization.Serializer;
-import org.axonframework.serialization.upcasting.event.EventUpcasterChain;
-import org.axonframework.serialization.upcasting.event.NoOpEventUpcasterChain;
+import org.axonframework.serialization.upcasting.event.EventUpcaster;
 import org.axonframework.serialization.xml.XStreamSerializer;
 
 import java.util.Arrays;
@@ -40,19 +38,17 @@ public class CassandraReadOnlyEventStorageEngine extends BatchingEventStorageEng
      * @param serializer                   Used to serialize and deserialize event payload and metadata. If {@code null}
      *                                     an {@link XStreamSerializer} is used.
      * @param upcasterChain                Allows older revisions of serialized objects to be deserialized. If {@code
-     *                                     null} a {@link NoOpEventUpcasterChain} is used.
+     *                                     null} a {@link org.axonframework.serialization.upcasting.event.NoOpEventUpcaster} is used.
      * @param persistenceExceptionResolver Detects concurrency exceptions from the backing database. If {@code null}
      *                                     persistence exceptions are not explicitly resolved.
-     * @param transactionManager           The transaction manager used to set the isolation level of the transaction
-     *                                     when loading events.
      * @param batchSize                    The number of events that should be read at each database access. When more
      *                                     than this number of events must be read to rebuild an aggregate's state, the
      *                                     events are read in batches of this size. If {@code null} a batch size of 100
      *                                     is used. Tip: if you use a snapshotter, make sure to choose snapshot trigger
      *                                     and batch size such that a single batch will generally retrieve all events
      */
-    public CassandraReadOnlyEventStorageEngine(Serializer serializer, EventUpcasterChain upcasterChain, PersistenceExceptionResolver persistenceExceptionResolver, TransactionManager transactionManager, Integer batchSize, Session session, EventSchema schema) {
-        super(serializer, upcasterChain, persistenceExceptionResolver, transactionManager, batchSize);
+    public CassandraReadOnlyEventStorageEngine(Serializer serializer, EventUpcaster upcasterChain, PersistenceExceptionResolver persistenceExceptionResolver, Integer batchSize, Session session, EventSchema schema) {
+        super(serializer, upcasterChain, persistenceExceptionResolver, batchSize);
         if (session == null) {
             throw new IllegalArgumentException("Parameter 'session' cannot be null");
         }
@@ -66,8 +62,8 @@ public class CassandraReadOnlyEventStorageEngine extends BatchingEventStorageEng
 
     @Override
     protected List<DomainEventEntry> fetchTrackedEvents(TrackingToken lastToken, int batchSize) {
-        if (lastToken == null || lastToken instanceof GlobalIndexTrackingToken) {
-            long globalIndex = lastToken == null ? -1 : ((GlobalIndexTrackingToken) lastToken).getGlobalIndex();
+        if (lastToken == null || lastToken instanceof GlobalSequenceTrackingToken) {
+            long globalIndex = lastToken == null ? -1 : ((GlobalSequenceTrackingToken) lastToken).getGlobalIndex();
             long batchIndex = EventLogEntry.determineBatchIndex(globalIndex + 1);
             ResultSet resultSet = session.execute("SELECT " + quoted(schema().aggregateIdentifierColumn(), schema().sequenceNumberColumn()) +
                     " FROM " + quoted(schema().eventLogTable()) +
@@ -111,11 +107,6 @@ public class CassandraReadOnlyEventStorageEngine extends BatchingEventStorageEng
                 lastSequenceNumber,
                 batchSize);
         return eventMapper.map(resultSet).all();
-    }
-
-    @Override
-    protected TrackingToken getTokenForGapDetection(TrackingToken token) {
-        return token;
     }
 
     @Override

@@ -6,7 +6,7 @@ import com.datastax.driver.mapping.annotations.Table;
 import com.datastax.driver.mapping.annotations.Transient;
 import org.axonframework.eventsourcing.DomainEventMessage;
 import org.axonframework.eventsourcing.eventstore.DomainEventData;
-import org.axonframework.eventsourcing.eventstore.GlobalIndexTrackingToken;
+import org.axonframework.eventsourcing.eventstore.GlobalSequenceTrackingToken;
 import org.axonframework.eventsourcing.eventstore.TrackedEventData;
 import org.axonframework.eventsourcing.eventstore.TrackingToken;
 import org.axonframework.serialization.*;
@@ -80,7 +80,7 @@ public class DomainEventEntry implements DomainEventData<byte[]>, TrackedEventDa
 
     @Override
     public TrackingToken trackingToken() {
-        return new GlobalIndexTrackingToken(globalIndex);
+        return new GlobalSequenceTrackingToken(globalIndex);
     }
 
     @Override

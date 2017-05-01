@@ -16,7 +16,7 @@ import java.util.Date;
 public class TokenEntry {
     @Column(caseSensitive = true)
     @PartitionKey
-    private String processName;
+    private String processorName;
     @Column(caseSensitive = true)
     @PartitionKey(1)
     private int segment;
@@ -29,7 +29,7 @@ public class TokenEntry {
 
     public TokenEntry(String process, int segment, TrackingToken tokenBuffer, Serializer serializer) {
         SerializedObject<byte[]> serializedToken = serializer.serialize(tokenBuffer, byte[].class);
-        this.processName = process;
+        this.processorName = process;
         this.segment = segment;
         this.tokenBuffer = ByteBuffer.wrap(serializedToken.getData());
         this.tokenType = serializedToken.getType().getName();

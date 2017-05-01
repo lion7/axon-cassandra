@@ -5,14 +5,13 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import org.axonframework.common.jdbc.PersistenceExceptionResolver;
-import org.axonframework.common.transaction.TransactionManager;
 import org.axonframework.eventhandling.EventMessage;
 import org.axonframework.eventsourcing.DomainEventMessage;
 import org.axonframework.eventsourcing.eventstore.EventUtils;
 import org.axonframework.messaging.unitofwork.CurrentUnitOfWork;
 import org.axonframework.messaging.unitofwork.UnitOfWork;
 import org.axonframework.serialization.Serializer;
-import org.axonframework.serialization.upcasting.event.EventUpcasterChain;
+import org.axonframework.serialization.upcasting.event.EventUpcaster;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,8 +28,8 @@ public class CassandraEventStorageEngine extends CassandraReadOnlyEventStorageEn
     private final PreparedStatement counterSelectStatement;
     private final PreparedStatement counterInsertStatement;
 
-    public CassandraEventStorageEngine(Serializer serializer, EventUpcasterChain upcasterChain, PersistenceExceptionResolver persistenceExceptionResolver, TransactionManager transactionManager, Integer batchSize, Session session, EventSchema schema) {
-        super(serializer, upcasterChain, persistenceExceptionResolver, transactionManager, batchSize, session, schema);
+    public CassandraEventStorageEngine(Serializer serializer, EventUpcaster upcasterChain, PersistenceExceptionResolver persistenceExceptionResolver, Integer batchSize, Session session, EventSchema schema) {
+        super(serializer, upcasterChain, persistenceExceptionResolver, batchSize, session, schema);
 
         schema.initialize(session);
 

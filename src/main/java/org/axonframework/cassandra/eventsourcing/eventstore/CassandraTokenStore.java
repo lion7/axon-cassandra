@@ -16,24 +16,32 @@ public class CassandraTokenStore implements TokenStore {
 
     private final Serializer serializer;
     private final Mapper<TokenEntry> tokenMapper;
+    private final TokenSchema schema;
 
-    public CassandraTokenStore(Session session, Serializer serializer) {
+    public CassandraTokenStore(Session session, Serializer serializer, TokenSchema schema) {
         if (session == null) {
             throw new IllegalArgumentException("Parameter 'session' cannot be null");
         }
         MappingManager mappingManager = new MappingManager(session);
         this.tokenMapper = mappingManager.mapper(TokenEntry.class);
         this.serializer = getOrDefault(serializer, XStreamSerializer::new);
+        this.schema = getOrDefault(schema, TokenSchema.builder().build());
     }
 
     @Override
-    public void storeToken(TrackingToken token, String processName, int segment) {
-        tokenMapper.save(new TokenEntry(processName, segment, token, serializer));
+    public void storeToken(TrackingToken token, String processorName, int segment) {
+        tokenMapper.save(new TokenEntry(processorName, segment, token, serializer));
     }
 
     @Override
-    public TrackingToken fetchToken(String processName, int segment) {
-        Optional<TokenEntry> tokenEntry = Optional.ofNullable(tokenMapper.get(processName, segment));
+    public TrackingToken fetchToken(String processorName, int segment) {
+        Optional<TokenEntry> tokenEntry = Optional.ofNullable(tokenMapper.get(processorName, segment));
         return tokenEntry.map(entry -> entry.trackingToken(serializer)).orElse(null);
+    }
+
+    @Override
+    public void releaseClaim(String processorName, int segment) {
+        Optional<TokenEntry> tokenEntry = Optional.ofNullable(tokenMapper.get(processorName, segment));
+        tokenEntry.ifPresent(tokenMapper::delete);
     }
 }
