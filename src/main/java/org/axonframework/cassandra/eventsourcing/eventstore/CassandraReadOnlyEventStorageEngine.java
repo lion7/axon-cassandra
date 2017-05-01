@@ -124,7 +124,7 @@ public class CassandraReadOnlyEventStorageEngine extends BatchingEventStorageEng
         return Optional.ofNullable(snapshotMapper.get(aggregateIdentifier));
     }
 
-    private EventSchema schema() {
+    protected EventSchema schema() {
         return schema;
     }
 

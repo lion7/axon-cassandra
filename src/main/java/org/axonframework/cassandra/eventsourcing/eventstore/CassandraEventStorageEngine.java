@@ -31,11 +31,11 @@ public class CassandraEventStorageEngine extends CassandraReadOnlyEventStorageEn
     public CassandraEventStorageEngine(Serializer serializer, EventUpcaster upcasterChain, PersistenceExceptionResolver persistenceExceptionResolver, Integer batchSize, Session session, EventSchema schema) {
         super(serializer, upcasterChain, persistenceExceptionResolver, batchSize, session, schema);
 
-        this.counterSelectStatement = session.prepare("SELECT " + quoted(schema.valueColumn()) +
-                " FROM" + quoted(schema.countersTable()) +
-                " WHERE " + quoted(schema.nameColumn()) + " = ? LIMIT 1");
-        this.counterInsertStatement = session.prepare("INSERT INTO " + quoted(schema.countersTable()) +
-                " (" + quoted(schema.nameColumn(), schema.valueColumn()) + ")" +
+        this.counterSelectStatement = session.prepare("SELECT " + quoted(schema().valueColumn()) +
+                " FROM" + quoted(schema().countersTable()) +
+                " WHERE " + quoted(schema().nameColumn()) + " = ? LIMIT 1");
+        this.counterInsertStatement = session.prepare("INSERT INTO " + quoted(schema().countersTable()) +
+                " (" + quoted(schema().nameColumn(), schema().valueColumn()) + ")" +
                 " VALUES(?,?)");
 
         Row globalIndexCounterRow = session.execute(counterSelectStatement.bind(GLOBAL_INDEX_COUNTER_NAME)).one();
